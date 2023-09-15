@@ -4,18 +4,19 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function seed() {
-  const email = "rachel@remix.run";
+  const email = "igor@igor.com";
 
   // cleanup the existing database
   await prisma.user.delete({ where: { email } }).catch(() => {
     // no worries if it doesn't exist yet
   });
 
-  const hashedPassword = await bcrypt.hash("racheliscool", 10);
+  const hashedPassword = await bcrypt.hash("igor1234", 10);
 
   const user = await prisma.user.create({
     data: {
       email,
+      name: "Igor Ribeiro",
       password: {
         create: {
           hash: hashedPassword,
@@ -24,19 +25,70 @@ async function seed() {
     },
   });
 
-  await prisma.note.create({
+  await prisma.trip.create({
     data: {
-      title: "My first note",
-      body: "Hello, world!",
       userId: user.id,
+      name: "Florida US x BR",
+      ticketCost: 9000,
+      localCurrency: "BRL",
+      abroadCurrency: "USD",
+      abroadTaxPercentage: 6.38,
+      abroadConversionRate: 4.87,
+      items: {
+        create: [
+          {
+            name: "iPhone 15 Pro 256gb",
+            quantity: 2,
+            abroadPrice: 1200,
+            localPrice: 11000,
+          },
+          {
+            name: "Macbook Air M2 15' 256gb",
+            quantity: 2,
+            abroadPrice: 1300,
+            localPrice: 15000,
+          },
+          {
+            name: "Apple Watch Series 9",
+            quantity: 2,
+            abroadPrice: 400,
+            localPrice: 5000,
+          },
+          {
+            name: "AirPods (3ª geração)",
+            quantity: 2,
+            abroadPrice: 180,
+            localPrice: 2000,
+          },
+        ],
+      },
     },
   });
 
-  await prisma.note.create({
+  await prisma.trip.create({
     data: {
-      title: "My second note",
-      body: "Hello, world!",
       userId: user.id,
+      name: "Florida US x BR 2",
+      ticketCost: 0,
+      localCurrency: "BRL",
+      abroadCurrency: "USD",
+      abroadTaxPercentage: 6.38,
+      abroadConversionRate: 4.87,
+      items: {
+        create: [
+          {
+            name: "iPhone 15 Pro 256gb",
+            quantity: 2,
+            abroadPrice: 1200,
+            localPrice: 5000,
+          },
+          {
+            name: "Macbook Air M2 15' 256gb",
+            abroadPrice: 1500,
+            localPrice: 5500,
+          },
+        ],
+      },
     },
   });
 

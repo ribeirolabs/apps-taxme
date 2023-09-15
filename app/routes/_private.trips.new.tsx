@@ -3,7 +3,7 @@ import { json, redirect } from "@remix-run/node";
 import { Form, useActionData } from "@remix-run/react";
 import { useEffect, useRef } from "react";
 
-import { createNote } from "~/models/note.server";
+import { createTrip } from "~/models/trip.server";
 import { requireUserId } from "~/session.server";
 
 export const action = async ({ request }: ActionArgs) => {
@@ -16,23 +16,23 @@ export const action = async ({ request }: ActionArgs) => {
   if (typeof title !== "string" || title.length === 0) {
     return json(
       { errors: { body: null, title: "Title is required" } },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
   if (typeof body !== "string" || body.length === 0) {
     return json(
       { errors: { body: "Body is required", title: null } },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
-  const note = await createNote({ body, title, userId });
+  const trip = await createTrip({ body, title, userId });
 
-  return redirect(`/notes/${note.id}`);
+  return redirect(`/trips/${trip.id}`);
 };
 
-export default function NewNotePage() {
+export default function NewTripPage() {
   const actionData = useActionData<typeof action>();
   const titleRef = useRef<HTMLInputElement>(null);
   const bodyRef = useRef<HTMLTextAreaElement>(null);

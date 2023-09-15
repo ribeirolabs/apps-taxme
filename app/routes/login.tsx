@@ -66,7 +66,7 @@ export const meta: V2_MetaFunction = () => [{ title: "Login" }];
 
 export default function LoginPage() {
   const [searchParams] = useSearchParams();
-  const redirectTo = searchParams.get("redirectTo") || "/notes";
+  const redirectTo = searchParams.get("redirectTo") || "/trips";
   const actionData = useActionData<typeof action>();
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
@@ -94,7 +94,7 @@ export default function LoginPage() {
               autoComplete="email"
               aria-invalid={actionData?.errors?.email ? true : undefined}
               aria-describedby="email-error"
-              defaultValue="rachel@remix.run"
+              defaultValue="igor@igor.com"
             />
             {actionData?.errors?.email ? (
               <div className="pt-1 text-red-700" id="email-error">

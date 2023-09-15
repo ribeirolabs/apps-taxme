@@ -1,6 +1,7 @@
 import type { LoaderArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { Link, NavLink, useLoaderData } from "@remix-run/react";
+import { Link, useLoaderData } from "@remix-run/react";
+import { CurrencyValue } from "~/components/currency-value";
 import {
   Table,
   TableBody,
@@ -9,15 +10,13 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
-import { numberFormat } from "~/lib/numberFormat";
-import { cn } from "~/lib/utils";
 
-import { getTrips } from "~/models/trip.server";
+import { getTripsWithSummary } from "~/models/trip.server";
 import { requireUserId } from "~/session.server";
 
 export const loader = async ({ request }: LoaderArgs) => {
   const userId = await requireUserId(request);
-  const trips = await getTrips({ userId });
+  const trips = await getTripsWithSummary({ userId });
   return json({ trips });
 };
 
@@ -58,40 +57,29 @@ export default function TripsPage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
-                      {numberFormat(
-                        trip.totalAbroadConverted,
-                        trip.localCurrency
-                      )}
-                      <div className="text-xs text-muted-foreground">
-                        {numberFormat(trip.totalAbroad, trip.abroadCurrency)}
-                      </div>
+                      <CurrencyValue
+                        mainValue={trip.totalAbroadConverted}
+                        mainCurrency={trip.localCurrency}
+                        secondaryValue={trip.totalAbroad}
+                        secondaryCurrency={trip.abroadCurrency}
+                      />
                     </TableCell>
                     <TableCell className="text-right">
-                      {numberFormat(trip.totalLocal, trip.localCurrency)}
-                      <div className="text-xs text-muted-foreground">
-                        {numberFormat(
-                          trip.totalLocal / trip.abroadConversionRate,
-                          trip.abroadCurrency
-                        )}
-                      </div>
+                      <CurrencyValue
+                        mainValue={trip.totalLocal}
+                        mainCurrency={trip.localCurrency}
+                        secondaryValue={trip.totalLocalConverted}
+                        secondaryCurrency={trip.abroadCurrency}
+                      />
                     </TableCell>
-                    <TableCell
-                      className={cn(
-                        "font-bold text-right",
-                        trip.totalSavings > 0
-                          ? "text-positive"
-                          : trip.totalSavings < 0
-                          ? "text-destructive"
-                          : null
-                      )}
-                    >
-                      {numberFormat(trip.totalSavings, trip.localCurrency)}
-                      <div className="text-xs opacity-60">
-                        {numberFormat(
-                          trip.totalSavings / trip.abroadConversionRate,
-                          trip.abroadCurrency
-                        )}
-                      </div>
+                    <TableCell>
+                      <CurrencyValue
+                        mainValue={trip.totalSavings}
+                        mainCurrency={trip.localCurrency}
+                        secondaryValue={trip.totalSavingsConverted}
+                        secondaryCurrency={trip.abroadCurrency}
+                        colorize
+                      />
                     </TableCell>
                   </TableRow>
                 ))}

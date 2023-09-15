@@ -3,27 +3,43 @@ import type { User, Trip, TripItem } from "@prisma/client";
 import { prisma } from "~/db.server";
 
 function calculateItem({ trip, item }: { trip: Trip; item: TripItem }) {
-  const withTax =
+  const abroadPriceWithTax =
     (item.abroadPrice + item.abroadPrice * (trip.abroadTaxPercentage / 100)) *
     item.quantity;
 
-  const abroadLocalPrice = withTax * trip.abroadConversionRate;
-  const savings = item.localPrice * item.quantity - abroadLocalPrice;
+  const abroadPriceConverted = abroadPriceWithTax * trip.abroadConversionRate;
+  const localPrice = item.localPrice * item.quantity;
+  const localPriceConverted = localPrice / trip.abroadConversionRate;
+  const savings = localPrice - abroadPriceConverted;
+  const savingsConverted = savings / trip.abroadConversionRate;
 
   return {
     ...item,
-    abroadLocalPrice,
+    localPrice,
+    localPriceConverted,
+    abroadPrice: abroadPriceWithTax,
+    abroadPriceConverted,
     savings,
+    savingsConverted,
+  } satisfies TripItem & {
+    localPriceConverted: number;
+    abroadPriceConverted: number;
+    savings: number;
+    savingsConverted: number;
   };
 }
 
-export async function getTrips({ userId }: { userId: User["id"] }) {
-  const trips = await prisma.trip.findMany({
+export function getTrips({ userId }: { userId: User["id"] }) {
+  return prisma.trip.findMany({
     where: { userId },
     include: {
       items: true,
     },
   });
+}
+
+export async function getTripsWithSummary({ userId }: { userId: User["id"] }) {
+  const trips = await getTrips({ userId });
 
   return trips.map((trip) => {
     const items = trip.items.map((item) => ({
@@ -36,13 +52,20 @@ export async function getTrips({ userId }: { userId: User["id"] }) {
       itemsCount: items.reduce((total, item) => total + item.quantity, 0),
       totalAbroad: items.reduce((total, item) => total + item.abroadPrice, 0),
       totalAbroadConverted: items.reduce(
-        (total, item) => total + item.abroadLocalPrice,
+        (total, item) => total + item.abroadPriceConverted,
         0
       ),
       totalLocal: items.reduce((total, item) => total + item.localPrice, 0),
+      totalLocalConverted: items.reduce(
+        (total, item) => total + item.localPriceConverted,
+        0
+      ),
       totalSavings:
         items.reduce((total, item) => total + item.savings, 0) -
         trip.ticketCost,
+      totalSavingsConverted:
+        items.reduce((total, item) => total + item.savingsConverted, 0) -
+        trip.ticketCost / trip.abroadConversionRate,
     };
   });
 }

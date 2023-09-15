@@ -33,7 +33,7 @@ async function seed() {
       localCurrency: "BRL",
       abroadCurrency: "USD",
       abroadTaxPercentage: 6.38,
-      abroadConversionRate: 4.87,
+      abroadConversionRate: 4.86687,
       items: {
         create: [
           {
@@ -73,7 +73,7 @@ async function seed() {
       localCurrency: "BRL",
       abroadCurrency: "USD",
       abroadTaxPercentage: 6.38,
-      abroadConversionRate: 4.87,
+      abroadConversionRate: 4.86687,
       items: {
         create: [
           {

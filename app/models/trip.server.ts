@@ -1,27 +1,34 @@
-import type { User, Trip, TripItem } from "@prisma/client";
+import type { User, Trip, TripProduct } from "@prisma/client";
 
 import { prisma } from "~/db.server";
 
-function calculateItem({ trip, item }: { trip: Trip; item: TripItem }) {
+function calculateProduct({
+  trip,
+  product,
+}: {
+  trip: Trip;
+  product: TripProduct;
+}) {
   const abroadPriceWithTax =
-    (item.abroadPrice + item.abroadPrice * (trip.abroadTaxPercentage / 100)) *
-    item.quantity;
+    (product.abroadPrice +
+      product.abroadPrice * (trip.abroadTaxPercentage / 100)) *
+    product.quantity;
 
   const abroadPriceConverted = abroadPriceWithTax * trip.abroadConversionRate;
-  const localPrice = item.localPrice * item.quantity;
+  const localPrice = product.localPrice * product.quantity;
   const localPriceConverted = localPrice / trip.abroadConversionRate;
   const savings = localPrice - abroadPriceConverted;
   const savingsConverted = savings / trip.abroadConversionRate;
 
   return {
-    ...item,
+    ...product,
     localPrice,
     localPriceConverted,
     abroadPrice: abroadPriceWithTax,
     abroadPriceConverted,
     savings,
     savingsConverted,
-  } satisfies TripItem & {
+  } satisfies TripProduct & {
     localPriceConverted: number;
     abroadPriceConverted: number;
     savings: number;
@@ -33,7 +40,7 @@ export function getTrips({ userId }: { userId: User["id"] }) {
   return prisma.trip.findMany({
     where: { userId },
     include: {
-      items: true,
+      products: true,
     },
   });
 }
@@ -42,29 +49,41 @@ export async function getTripsWithSummary({ userId }: { userId: User["id"] }) {
   const trips = await getTrips({ userId });
 
   return trips.map((trip) => {
-    const items = trip.items.map((item) => ({
-      ...calculateItem({ item, trip }),
+    const products = trip.products.map((product) => ({
+      ...calculateProduct({ product, trip }),
     }));
 
     return {
       ...trip,
-      items,
-      itemsCount: items.reduce((total, item) => total + item.quantity, 0),
-      totalAbroad: items.reduce((total, item) => total + item.abroadPrice, 0),
-      totalAbroadConverted: items.reduce(
-        (total, item) => total + item.abroadPriceConverted,
+      products,
+      productsCount: products.reduce(
+        (total, product) => total + product.quantity,
         0
       ),
-      totalLocal: items.reduce((total, item) => total + item.localPrice, 0),
-      totalLocalConverted: items.reduce(
-        (total, item) => total + item.localPriceConverted,
+      totalAbroad: products.reduce(
+        (total, product) => total + product.abroadPrice,
+        0
+      ),
+      totalAbroadConverted: products.reduce(
+        (total, product) => total + product.abroadPriceConverted,
+        0
+      ),
+      totalLocal: products.reduce(
+        (total, product) => total + product.localPrice,
+        0
+      ),
+      totalLocalConverted: products.reduce(
+        (total, product) => total + product.localPriceConverted,
         0
       ),
       totalSavings:
-        items.reduce((total, item) => total + item.savings, 0) -
+        products.reduce((total, product) => total + product.savings, 0) -
         trip.ticketCost,
       totalSavingsConverted:
-        items.reduce((total, item) => total + item.savingsConverted, 0) -
+        products.reduce(
+          (total, product) => total + product.savingsConverted,
+          0
+        ) -
         trip.ticketCost / trip.abroadConversionRate,
     };
   });

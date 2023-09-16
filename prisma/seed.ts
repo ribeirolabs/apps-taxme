@@ -34,7 +34,7 @@ async function seed() {
       abroadCurrency: "USD",
       abroadTaxPercentage: 6.38,
       abroadConversionRate: 4.86687,
-      items: {
+      products: {
         create: [
           {
             name: "iPhone 15 Pro 256gb",
@@ -74,7 +74,7 @@ async function seed() {
       abroadCurrency: "USD",
       abroadTaxPercentage: 6.38,
       abroadConversionRate: 4.86687,
-      items: {
+      products: {
         create: [
           {
             name: "iPhone 15 Pro 256gb",

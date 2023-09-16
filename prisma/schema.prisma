@@ -44,10 +44,10 @@ model Trip {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   userId String
 
-  items TripItem[]
+  products TripProduct[]
 }
 
-model TripItem {
+model TripProduct {
   id       String @id @default(cuid())
   name     String
   quantity Int    @default(1)
@@ -63,4 +63,6 @@ model TripItem {
 
   trip   Trip   @relation(fields: [tripId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   tripId String
+
+  @@map("TripProducts")
 }

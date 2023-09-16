@@ -53,7 +53,7 @@ export default function TripsPage() {
                         {trip.name}
                       </Link>
                       <div className="text-muted-foreground">
-                        {trip.itemsCount} items
+                        {trip.productsCount} products
                       </div>
                     </TableCell>
                     <TableCell className="text-right">

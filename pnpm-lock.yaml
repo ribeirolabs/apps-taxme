@@ -28,6 +28,9 @@ dependencies:
   '@remix-run/serve':
     specifier: ^1.19.3
     version: 1.19.3
+  '@ribeirolabs/local-storage':
+    specifier: ^3.0.1
+    version: 3.0.1
   bcryptjs:
     specifier: ^2.4.3
     version: 2.4.3
@@ -2616,6 +2619,10 @@ packages:
     resolution: {integrity: sha512-KRJtwrjRV5Bb+pM7zxcTJkhIqWWSy+MYsIxHK+0m5atcznsf15YwUBWHWulZerV2+vvHH1Lp1DD7pw6qKW8SgA==}
     dependencies:
       web-streams-polyfill: 3.2.1
+
+  /@ribeirolabs/local-storage@3.0.1:
+    resolution: {integrity: sha512-ujt5K87ZGddcgJAtYRK1NFgAsis/RCP12rJ/fWa4ci+VFTspzYTvso6xq+QSOZiHZCyuKd/Zab6SwY5Gtp+y8w==}
+    dev: false
 
   /@rollup/pluginutils@4.2.1:
     resolution: {integrity: sha512-iKnFXr7NkdZAIHiIWE+BX5ULi/ucVFYWD6TbAV+rZctiRTY2PL6tsIKhoIOaoskiWAkgu+VsbXgUVDNLHf+InQ==}

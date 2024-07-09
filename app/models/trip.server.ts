@@ -1,8 +1,31 @@
-import type { User, Trip, TripProduct } from "@prisma/client";
+import type { User, Trip, TripProduct, Prisma } from "@prisma/client";
 
 import { prisma } from "~/db.server";
 
-function calculateProduct({
+export type TripWithProducts = Trip & {
+  products: TripProduct[];
+};
+
+export type TripSummaryWithProducts = Trip & {
+  products: TripProductWithSummary[];
+  productsCount: number;
+  totalAbroad: number;
+  totalAbroadConverted: number;
+  totalLocal: number;
+  totalLocalConverted: number;
+  totalSavings: number;
+  totalSavingsConverted: number;
+};
+
+export type TripProductWithSummary = TripProduct & {
+  localPriceConverted: number;
+  abroadPriceConverted: number;
+  abroadPriceWithTax: number;
+  savings: number;
+  savingsConverted: number;
+};
+
+export function calculateProduct({
   trip,
   product,
 }: {
@@ -10,30 +33,24 @@ function calculateProduct({
   product: TripProduct;
 }) {
   const abroadPriceWithTax =
-    (product.abroadPrice +
-      product.abroadPrice * (trip.abroadTaxPercentage / 100)) *
-    product.quantity;
+    product.abroadPrice +
+    product.abroadPrice * (trip.abroadTaxPercentage / 100);
 
   const abroadPriceConverted = abroadPriceWithTax * trip.abroadConversionRate;
-  const localPrice = product.localPrice * product.quantity;
-  const localPriceConverted = localPrice / trip.abroadConversionRate;
-  const savings = localPrice - abroadPriceConverted;
+  const localPriceConverted = product.localPrice / trip.abroadConversionRate;
+  const savings =
+    product.quantity * product.localPrice -
+    product.quantity * abroadPriceConverted;
   const savingsConverted = savings / trip.abroadConversionRate;
 
   return {
     ...product,
-    localPrice,
     localPriceConverted,
-    abroadPrice: abroadPriceWithTax,
+    abroadPriceWithTax,
     abroadPriceConverted,
     savings,
     savingsConverted,
-  } satisfies TripProduct & {
-    localPriceConverted: number;
-    abroadPriceConverted: number;
-    savings: number;
-    savingsConverted: number;
-  };
+  } satisfies TripProductWithSummary;
 }
 
 export function getTrips({ userId }: { userId: User["id"] }) {
@@ -45,48 +62,51 @@ export function getTrips({ userId }: { userId: User["id"] }) {
   });
 }
 
+export function calculateTripSummary(
+  trip: TripWithProducts
+): TripSummaryWithProducts {
+  const products = trip.products.map((product) => ({
+    ...calculateProduct({ product, trip }),
+  }));
+
+  return {
+    ...trip,
+    products,
+    productsCount: products.reduce(
+      (total, product) => total + product.quantity,
+      0
+    ),
+    totalAbroad: products.reduce(
+      (total, product) => total + product.abroadPrice * product.quantity,
+      trip.ticketCost / trip.abroadConversionRate
+    ),
+    totalAbroadConverted: products.reduce(
+      (total, product) =>
+        total + product.abroadPriceConverted * product.quantity,
+      trip.ticketCost
+    ),
+    totalLocal: products.reduce(
+      (total, product) => total + product.localPrice * product.quantity,
+      0
+    ),
+    totalLocalConverted: products.reduce(
+      (total, product) =>
+        total + product.localPriceConverted * product.quantity,
+      0
+    ),
+    totalSavings:
+      products.reduce((total, product) => total + product.savings, 0) -
+      trip.ticketCost,
+    totalSavingsConverted:
+      products.reduce((total, product) => total + product.savingsConverted, 0) -
+      trip.ticketCost / trip.abroadConversionRate,
+  };
+}
+
 export async function getTripsWithSummary({ userId }: { userId: User["id"] }) {
   const trips = await getTrips({ userId });
 
-  return trips.map((trip) => {
-    const products = trip.products.map((product) => ({
-      ...calculateProduct({ product, trip }),
-    }));
-
-    return {
-      ...trip,
-      products,
-      productsCount: products.reduce(
-        (total, product) => total + product.quantity,
-        0
-      ),
-      totalAbroad: products.reduce(
-        (total, product) => total + product.abroadPrice,
-        0
-      ),
-      totalAbroadConverted: products.reduce(
-        (total, product) => total + product.abroadPriceConverted,
-        0
-      ),
-      totalLocal: products.reduce(
-        (total, product) => total + product.localPrice,
-        0
-      ),
-      totalLocalConverted: products.reduce(
-        (total, product) => total + product.localPriceConverted,
-        0
-      ),
-      totalSavings:
-        products.reduce((total, product) => total + product.savings, 0) -
-        trip.ticketCost,
-      totalSavingsConverted:
-        products.reduce(
-          (total, product) => total + product.savingsConverted,
-          0
-        ) -
-        trip.ticketCost / trip.abroadConversionRate,
-    };
-  });
+  return trips.map((trip) => calculateTripSummary(trip));
 }
 
 export function getTrip({
@@ -97,6 +117,9 @@ export function getTrip({
 }) {
   return prisma.trip.findFirst({
     where: { id, userId },
+    include: {
+      products: true,
+    },
   });
 }
 
@@ -124,5 +147,39 @@ export function deleteTrip({
 }: Pick<Trip, "id"> & { userId: User["id"] }) {
   return prisma.trip.deleteMany({
     where: { id, userId },
+  });
+}
+
+export function updateTrip({
+  id,
+  userId,
+  data,
+}: Pick<Trip, "id"> & {
+  userId: User["id"];
+  data: Prisma.TripUpdateInput & {
+    products: Record<string, [number, number]>;
+  };
+}) {
+  const { products, ...trip } = data;
+
+  return prisma.trip.update({
+    data: {
+      ...trip,
+      products: {
+        updateMany: Object.keys(products).map((id) => ({
+          data: {
+            abroadPrice: products[id][0],
+            localPrice: products[id][1],
+          },
+          where: {
+            id,
+          },
+        })),
+      },
+    },
+    where: { id, userId },
+    include: {
+      products: true,
+    },
   });
 }

@@ -71,3 +71,9 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  .inner-content {
+    @apply w-full max-w-[800px] mx-auto;
+  }
+}
